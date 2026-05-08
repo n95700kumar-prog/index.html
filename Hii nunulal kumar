@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rupam AI - New Era v1.0</title>
+    <style>
+        :root { --glow: #ff4757; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; touch-action: none; }
+        #ui-layer { position: fixed; bottom: 30px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 1000; }
+        .input-box { display: flex; background: #111; border: 2.5px solid var(--glow); border-radius: 50px; width: 85%; max-width: 400px; box-shadow: 0 0 15px var(--glow); }
+        input { flex: 1; background: transparent; border: none; color: #fff; padding: 15px 20px; outline: none; font-size: 16px; }
+        button { background: var(--glow); border: none; width: 55px; height: 55px; border-radius: 50%; color: #fff; cursor: pointer; font-size: 20px; }
+    </style>
+</head>
+<body>
+<div id="ui-layer">
+    <div class="input-box">
+        <input type="text" id="userInput" placeholder="Dil ki baat kaho...">
+        <button id="sendBtn">❤️</button>
+    </div>
+</div>
+<script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } } </script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff, 4.5));
+const light = new THREE.DirectionalLight(0xffffff, 3);
+light.position.set(5, 5, 10);
+scene.add(light);
+
+let model, spine, armsL = [], armsR = [];
+new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/My-ai-girl@main/model%20(6).glb', (gltf) => {
+    model = gltf.scene;
+    model.scale.set(2.1, 2.1, 2.1);
+    model.position.y = -2.4;
+    scene.add(model);
+    
+    model.traverse(o => {
+        if (o.isBone) {
+            const n = o.name.toLowerCase();
+            if (n.includes("spine")) spine = o;
+            if (n.includes("arm") || n.includes("shoulder")) {
+                if (n.includes("left") || n.includes("_l")) armsL.push(o);
+                else armsR.push(o);
+            }
+        }
+    });
+});
+
+camera.position.z = 5;
+
+function animate() {
+    requestAnimationFrame(animate);
+    const t = Date.now() * 0.001;
+    if(model) {
+        model.position.y = -2.4 + Math.sin(t * 1.5) * 0.012; // v22 Breathing
+        if(spine) spine.rotation.y = Math.sin(t * 0.5) * 0.04; // v18 Posture
+        
+        armsL.forEach(b => b.rotation.z = THREE.MathUtils.lerp(b.rotation.z, 1.48, 0.1));
+        armsR.forEach(b => b.rotation.z = THREE.MathUtils.lerp(b.rotation.z, -1.48, 0.1));
+    }
+    renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
