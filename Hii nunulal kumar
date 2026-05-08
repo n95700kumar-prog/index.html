@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam AI - v1.2</title>
+    <title>Rupam AI - Model 5</title>
     <style>
         :root { --glow: #ff4757; }
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; touch-action: none; }
@@ -16,7 +16,7 @@
 <body>
 <div id="ui-layer">
     <div class="input-box">
-        <input type="text" id="userInput" placeholder="Mujhe dekho...">
+        <input type="text" id="userInput" placeholder="Kaise ho Rupam?">
         <button id="sendBtn">❤️</button>
     </div>
 </div>
@@ -37,24 +37,18 @@ const light = new THREE.DirectionalLight(0xffffff, 3);
 light.position.set(5, 5, 10);
 scene.add(light);
 
-let model, head, neck, armsL = [], armsR = [], faceMeshes = [];
-let mouse = { x: 0, y: 0 }, blinkT = 0;
+let model, head, neck, faceMeshes = [], mouse = { x: 0, y: 0 }, blinkT = 0;
 
-new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/My-ai-girl@main/model%20(6).glb', (gltf) => {
+// Naya Model Link Yahan Update Kiya Gaya Hai
+new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/Naman@main/model%20(5).glb', (gltf) => {
     model = gltf.scene;
-    model.scale.set(2.1, 2.1, 2.1);
-    model.position.y = -2.4;
+    model.scale.set(2.2, 2.2, 2.2); // Model 5 ke liye scale adjust kiya
+    model.position.y = -2.5;
     scene.add(model);
-    
     model.traverse(o => {
         if (o.isBone) {
-            const n = o.name.toLowerCase();
-            if (n.includes("head")) head = o;
-            if (n.includes("neck")) neck = o;
-            if (n.includes("arm") || n.includes("shoulder")) {
-                if (n.includes("left") || n.includes("_l")) armsL.push(o);
-                else armsR.push(o);
-            }
+            if (o.name.toLowerCase().includes("head")) head = o;
+            if (o.name.toLowerCase().includes("neck")) neck = o;
         }
         if (o.morphTargetInfluences) faceMeshes.push(o);
     });
@@ -63,33 +57,27 @@ new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/My-ai-girl@m
 camera.position.z = 5;
 
 window.addEventListener('pointermove', (e) => {
-    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.45;
-    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.25;
+    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.4;
+    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.2;
 });
 
 function animate() {
     requestAnimationFrame(animate);
     const t = Date.now() * 0.001;
     if(model) {
-        model.position.y = -2.4 + Math.sin(t * 1.5) * 0.012; 
-        
+        model.position.y = -2.5 + Math.sin(t * 1.5) * 0.01; 
         if (head) {
             head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.1);
             head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.1);
         }
-        if (neck) neck.rotation.y = THREE.MathUtils.lerp(neck.rotation.y, mouse.x * 0.4, 0.1);
-
-        armsL.forEach(b => b.rotation.z = 1.48);
-        armsR.forEach(b => b.rotation.z = -1.48);
-
         blinkT++;
         faceMeshes.forEach(mesh => {
             const d = mesh.morphTargetDictionary;
             const inf = mesh.morphTargetInfluences;
             const bL = d['eyeBlinkLeft'] || d['eyeBlink_L'];
             const bR = d['eyeBlinkRight'] || d['eyeBlink_R'];
-            if (blinkT > 180 && blinkT < 192) { inf[bL] = inf[bR] = 1; }
-            else { inf[bL] = inf[bR] = 0; if(blinkT > 192) blinkT = 0; }
+            if (bL !== undefined && blinkT > 180 && blinkT < 192) { inf[bL] = inf[bR] = 1; }
+            else if (bL !== undefined) { inf[bL] = inf[bR] = 0; if(blinkT > 192) blinkT = 0; }
         });
     }
     renderer.render(scene, camera);
