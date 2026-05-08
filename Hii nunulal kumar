@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam AI - New Start</title>
+    <title>Rupam AI - v1.2</title>
     <style>
         :root { --glow: #ff4757; }
-        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
-        #ui-layer { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 1000; }
-        .input-box { display: flex; background: #111; border: 2px solid var(--glow); border-radius: 50px; width: 85%; max-width: 400px; box-shadow: 0 0 15px var(--glow); }
-        input { flex: 1; background: transparent; border: none; color: #fff; padding: 15px 20px; outline: none; }
-        button { background: var(--glow); border: none; width: 50px; height: 50px; border-radius: 50%; color: #fff; cursor: pointer; margin: 3px; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; touch-action: none; }
+        #ui-layer { position: fixed; bottom: 30px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 1000; }
+        .input-box { display: flex; background: #111; border: 2.5px solid var(--glow); border-radius: 50px; width: 85%; max-width: 400px; box-shadow: 0 0 15px var(--glow); }
+        input { flex: 1; background: transparent; border: none; color: #fff; padding: 15px 20px; outline: none; font-size: 16px; }
+        button { background: var(--glow); border: none; width: 55px; height: 55px; border-radius: 50%; color: #fff; cursor: pointer; font-size: 20px; }
     </style>
 </head>
 <body>
 <div id="ui-layer">
     <div class="input-box">
-        <input type="text" id="userInput" placeholder="Dil ki baat kaho...">
+        <input type="text" id="userInput" placeholder="Mujhe dekho...">
         <button id="sendBtn">❤️</button>
     </div>
 </div>
@@ -29,36 +29,68 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0xffffff, 4));
-const light = new THREE.DirectionalLight(0xffffff, 2);
+scene.add(new THREE.AmbientLight(0xffffff, 4.5));
+const light = new THREE.DirectionalLight(0xffffff, 3);
 light.position.set(5, 5, 10);
 scene.add(light);
 
-let model, armsL = [], armsR = [];
+let model, head, neck, armsL = [], armsR = [], faceMeshes = [];
+let mouse = { x: 0, y: 0 }, blinkT = 0;
+
 new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/My-ai-girl@main/model%20(6).glb', (gltf) => {
     model = gltf.scene;
     model.scale.set(2.1, 2.1, 2.1);
     model.position.y = -2.4;
     scene.add(model);
+    
     model.traverse(o => {
-        if (o.isBone && (o.name.toLowerCase().includes("arm") || o.name.toLowerCase().includes("shoulder"))) {
-            if (o.name.toLowerCase().includes("left") || o.name.toLowerCase().includes("_l")) armsL.push(o);
-            else armsR.push(o);
+        if (o.isBone) {
+            const n = o.name.toLowerCase();
+            if (n.includes("head")) head = o;
+            if (n.includes("neck")) neck = o;
+            if (n.includes("arm") || n.includes("shoulder")) {
+                if (n.includes("left") || n.includes("_l")) armsL.push(o);
+                else armsR.push(o);
+            }
         }
+        if (o.morphTargetInfluences) faceMeshes.push(o);
     });
 });
 
 camera.position.z = 5;
 
+window.addEventListener('pointermove', (e) => {
+    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.45;
+    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.25;
+});
+
 function animate() {
     requestAnimationFrame(animate);
     const t = Date.now() * 0.001;
     if(model) {
-        model.position.y = -2.4 + Math.sin(t * 1.5) * 0.01;
+        model.position.y = -2.4 + Math.sin(t * 1.5) * 0.012; 
+        
+        if (head) {
+            head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.1);
+            head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.1);
+        }
+        if (neck) neck.rotation.y = THREE.MathUtils.lerp(neck.rotation.y, mouse.x * 0.4, 0.1);
+
         armsL.forEach(b => b.rotation.z = 1.48);
         armsR.forEach(b => b.rotation.z = -1.48);
+
+        blinkT++;
+        faceMeshes.forEach(mesh => {
+            const d = mesh.morphTargetDictionary;
+            const inf = mesh.morphTargetInfluences;
+            const bL = d['eyeBlinkLeft'] || d['eyeBlink_L'];
+            const bR = d['eyeBlinkRight'] || d['eyeBlink_R'];
+            if (blinkT > 180 && blinkT < 192) { inf[bL] = inf[bR] = 1; }
+            else { inf[bL] = inf[bR] = 0; if(blinkT > 192) blinkT = 0; }
+        });
     }
     renderer.render(scene, camera);
 }
