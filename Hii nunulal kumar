@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam AI - Model 5</title>
+    <title>Rupam AI - Model 5 Active</title>
     <style>
         :root { --glow: #ff4757; }
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; touch-action: none; }
@@ -39,11 +39,11 @@ scene.add(light);
 
 let model, head, neck, faceMeshes = [], mouse = { x: 0, y: 0 }, blinkT = 0;
 
-// Naya Model Link Yahan Update Kiya Gaya Hai
+// YAHAN AAPKA NAYA MODEL CONNECT HO RAHA HAI
 new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/Naman@main/model%20(5).glb', (gltf) => {
     model = gltf.scene;
-    model.scale.set(2.2, 2.2, 2.2); // Model 5 ke liye scale adjust kiya
-    model.position.y = -2.5;
+    model.scale.set(2.3, 2.3, 2.3); 
+    model.position.y = -2.6;
     scene.add(model);
     model.traverse(o => {
         if (o.isBone) {
@@ -57,15 +57,15 @@ new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/Naman@main/m
 camera.position.z = 5;
 
 window.addEventListener('pointermove', (e) => {
-    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.4;
-    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.2;
+    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.45;
+    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.25;
 });
 
 function animate() {
     requestAnimationFrame(animate);
     const t = Date.now() * 0.001;
     if(model) {
-        model.position.y = -2.5 + Math.sin(t * 1.5) * 0.01; 
+        model.position.y = -2.6 + Math.sin(t * 1.5) * 0.012; 
         if (head) {
             head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.1);
             head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.1);
