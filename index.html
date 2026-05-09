@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam AI - Final Fix</title>
+    <title>Rupam AI - Perfect Final</title>
     <style>
         :root { --glow: #ff4757; }
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
@@ -29,13 +29,13 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 scene.add(new THREE.AmbientLight(0xffffff, 4));
-const light = new THREE.DirectionalLight(0xffffff, 2);
+const light = new THREE.PointLight(0xffffff, 2);
 light.position.set(2, 2, 5);
 scene.add(light);
 
@@ -44,11 +44,10 @@ let model, head, mouse = { x: 0, y: 0 };
 new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
     model = gltf.scene;
     
-    // --- POSITION & SCALE FIX ---
-    // Scale ko 1.0 rakha hai taaki avatar zyada bada na ho
-    model.scale.set(1.0, 1.0, 1.0); 
+    // 1. SCALE FIX: Model ko 100 guna chhota kiya (0.012) taaki screen mein fit aaye
+    model.scale.set(0.012, 0.012, 0.012); 
     
-    // Model ko screen ke center (x=0) mein laya aur niche (y=-1.5) kiya
+    // 2. POSITION FIX: Bilkul center (x=0) aur bottom (y=-1.5) mein laya
     model.position.set(0, -1.5, 0); 
     
     scene.add(model);
@@ -56,19 +55,28 @@ new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@m
     model.traverse(o => {
         if (o.isBone) {
             const n = o.name.toLowerCase();
-            if (n.includes("head")) head = o;
             
-            // T-POSE FIX: Arms ko niche jhukana
-            if (n.includes("arm") || n.includes("shoulder")) {
-                if (n.includes("left")) o.rotation.z = 1.3;
-                if (n.includes("right")) o.rotation.z = -1.3;
+            // Head tracking
+            if (n.includes("head") || n.includes("neck")) head = o;
+            
+            // 3. HATH (ARM) FIX: T-pose se hatakar niche jhukana
+            // Hum UpperArm aur Shoulder dono ko rotate kar rahe hain perfect pose ke liye
+            if (n.includes("arm") || n.includes("shoulder") || n.includes("clavicle")) {
+                if (n.includes("left")) {
+                    o.rotation.z = 1.45; // Left haath niche
+                    o.rotation.x = 0.2;  // Thoda sa aage (natural)
+                }
+                if (n.includes("right")) {
+                    o.rotation.z = -1.45; // Right haath niche
+                    o.rotation.x = 0.2;   // Thoda sa aage
+                }
             }
         }
     });
 });
 
-// Camera ko thoda door set kiya taaki poora face dikhe
-camera.position.set(0, 0, 4);
+// Camera position (z=3) taaki face saaf dikhe
+camera.position.set(0, 0, 3.2);
 
 function speak(text) {
     window.speechSynthesis.cancel();
@@ -80,14 +88,14 @@ function speak(text) {
 document.getElementById('sendBtn').onclick = () => {
     const input = document.getElementById('userInput');
     if(input.value) {
-        speak("Namaste, main Rupam hoon. Kaise hain aap?");
+        speak("Ji, main Rupam hoon. Maine haath aur size dono thik kar liye hain!");
         input.value = "";
     }
 };
 
 window.addEventListener('pointermove', (e) => {
     mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.4;
-    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.3;
+    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.2;
 });
 
 function animate() {
