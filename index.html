@@ -3,34 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam AI</title>
+    <title>Rupam AI - Smart v1.5</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; }
-        #ui { position: fixed; bottom: 20px; width: 100%; text-align: center; z-index: 10; }
-        input { padding: 10px; border-radius: 20px; border: 2px solid #ff4757; width: 70%; }
+        :root { --glow: #ff4757; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        #ui-layer { position: fixed; bottom: 30px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 1000; }
+        .input-box { display: flex; background: #111; border: 2.5px solid var(--glow); border-radius: 50px; width: 85%; max-width: 400px; box-shadow: 0 0 15px var(--glow); }
+        input { flex: 1; background: transparent; border: none; color: #fff; padding: 15px 20px; outline: none; font-size: 16px; }
+        button { background: var(--glow); border: none; width: 55px; height: 55px; border-radius: 50%; color: #fff; cursor: pointer; font-size: 20px; }
+        #status { color: #fff; margin-bottom: 10px; font-size: 14px; text-shadow: 0 0 5px var(--glow); }
     </style>
 </head>
 <body>
-    <div id="ui"><input type="text" placeholder="Rupam se baat karein..."></div>
-    <script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } } </script>
-    <script type="module">
-        import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(35, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-        scene.add(new THREE.AmbientLight(0xffffff, 4));
-        new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
-            const model = gltf.scene;
-            model.position.y = -2;
-            scene.add(model);
-        });
-        camera.position.z = 5;
-        function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
-        animate();
-    </script>
+
+<div id="ui-layer">
+    <div id="status">Rupam aapka intezar kar rahi hai...</div>
+    <div class="input-box">
+        <input type="text" id="userInput" placeholder="Kaise ho Rupam?">
+        <button id="sendBtn">❤️</button>
+    </div>
+</div>
+
+<script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } } </script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff, 4.5));
+const light = new THREE.DirectionalLight(0xffffff, 3);
+light.position.set(5, 5, 10);
+scene.add(light);
+
+let model, head, faceMeshes = [], mouse = { x: 0, y: 0 };
+
+// NAYA MODEL LOAD HO RAHA HAI
+new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
+    model = gltf.scene;
+    model.scale.set(2.5, 2.5, 2.5); 
+    model.position.y = -2.8; // Isse model thoda niche set hoga
+    scene.add(model);
+    
+    model.traverse(o => {
+        if (o.isBone && o.name.toLowerCase().includes("head")) head = o;
+        if (o.morphTargetInfluences) faceMeshes.push(o);
+    });
+});
+
+camera.position.z = 5;
+
+// AI Voice Function
+function speak(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'hi-IN';
+    utterance.pitch = 1.3;
+    utterance.onstart = () => document.getElementById('status').innerText = "Rupam bol rahi hai...";
+    utterance.onend = () => document.getElementById('status').innerText = "Main sun rahi hoon...";
+    window.speechSynthesis.speak(utterance);
+}
+
+// Chat Logic
+document.getElementById('sendBtn').onclick = () => {
+    const input = document.getElementById('userInput');
+    if(input.value) {
+        document.getElementById('status').innerText = "Rupam soch rahi hai...";
+        // Yahan hum response de rahe hain
+        setTimeout(() => {
+            speak("Namaste! Main Rupam hoon. Aapka swagat hai.");
+            input.value = "";
+        }, 500);
+    }
+};
+
+// Tracking Mouse/Touch
+window.addEventListener('pointermove', (e) => {
+    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.5;
+    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.3;
+});
+
+function animate() {
+    requestAnimationFrame(animate);
+    if(model) {
+        model.position.y = -2.8 + Math.sin(Date.now() * 0.0015) * 0.015; 
+        if (head) {
+            head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.1);
+            head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.1);
+        }
+    }
+    renderer.render(scene, camera);
+}
+animate();
+</script>
 </body>
 </html>
-
