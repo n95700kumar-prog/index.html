@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam AI - Live</title>
+    <title>Rupam AI - Realistic</title>
     <style>
-        :root { --glow: #ff4757; }
-        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
-        #ui-layer { position: fixed; bottom: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 1000; }
-        .input-box { display: flex; background: rgba(15, 15, 15, 0.95); border: 2.2px solid var(--glow); border-radius: 50px; width: 88%; max-width: 380px; box-shadow: 0 0 15px var(--glow); }
-        input { flex: 1; background: transparent; border: none; color: #fff; padding: 12px 18px; outline: none; font-size: 16px; }
-        button { background: var(--glow); border: none; width: 48px; height: 48px; border-radius: 50%; color: #fff; cursor: pointer; }
-        #loader { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #ui-layer { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 100; }
+        .input-container { display: flex; background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(10px); border: 1.5px solid #ff4757; border-radius: 50px; width: 85%; max-width: 400px; padding: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        input { flex: 1; background: none; border: none; color: white; padding: 12px 20px; outline: none; font-size: 16px; }
+        button { background: #ff4757; border: none; color: white; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; transition: 0.3s; font-size: 20px; }
+        button:active { transform: scale(0.9); }
+        #loader { position: fixed; top: 50%; width: 100%; text-align: center; color: #ff4757; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="loader">Taiyaar ho rahi hoon...</div>
+<div id="loader">Rupam taiyaar ho rahi hai...</div>
 
 <div id="ui-layer">
-    <div class="input-box">
+    <div class="input-container">
         <input type="text" id="userInput" placeholder="Rupam se baat karein...">
         <button id="sendBtn">❤️</button>
     </div>
@@ -32,66 +32,95 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0xffffff, 4));
-const light = new THREE.DirectionalLight(0xffffff, 2);
-light.position.set(2, 2, 5);
-scene.add(light);
+// Lighting: Realistic Soft Light
+scene.add(new THREE.AmbientLight(0xffffff, 3.5));
+const spotLight = new THREE.SpotLight(0xffffff, 2);
+spotLight.position.set(5, 5, 5);
+scene.add(spotLight);
 
 let model, head, mouse = { x: 0, y: 0 };
+let clock = new THREE.Clock();
 
-const loader = new GLTFLoader();
-loader.load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
+new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
     model = gltf.scene;
 
-    // --- SKILL POWER: AUTO FIT LOGIC ---
+    // --- AUTOMATIC FIT SKILL ---
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
-    const scale = 2.0 / size.y; // Height ke hisaab se scale adjust karna
+    const scale = 2.2 / size.y; // Har model ke liye perfect height
     model.scale.set(scale, scale, scale);
     model.position.y = -1.2; 
     
     scene.add(model);
     document.getElementById('loader').style.display = 'none';
 
-    // --- BONE SKILL: POSE & TRACKING ---
+    // Bone Logic for Natural Pose
     model.traverse(o => {
         if (o.isBone) {
-            const n = o.name.toLowerCase();
-            if (n.includes("head")) head = o;
-
-            // Haathon ko naturally niche laana (T-pose hatane ke liye)
-            if (n.includes("arm") || n.includes("shoulder")) {
-                if (n.includes("left")) o.rotation.z = 1.4;
-                if (n.includes("right")) o.rotation.z = -1.4;
+            const name = o.name.toLowerCase();
+            if (name.includes("head")) head = o;
+            
+            // T-Pose Fix
+            if (name.includes("arm") || name.includes("shoulder")) {
+                if (name.includes("left")) o.rotation.z = 1.45;
+                if (name.includes("right")) o.rotation.z = -1.45;
             }
         }
     });
-}, undefined, (err) => {
-    document.getElementById('loader').innerText = "Load nahi hua!";
 });
 
-camera.position.set(0, 0, 3.5);
+camera.position.set(0, 0, 3.8);
 
 function animate() {
     requestAnimationFrame(animate);
-    if(model && head) {
-        head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.1);
-        head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.1);
+    const t = clock.getElapsedTime();
+
+    if(model) {
+        // --- NATURAL BREATHING SIMULATION ---
+        // Sine wave se shoulders aur chest ka halka upar niche hona
+        model.position.y = -1.2 + Math.sin(t * 1.2) * 0.005; 
+        
+        if(head) {
+            // Smooth natural head tracking
+            head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.08);
+            head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.08);
+        }
     }
     renderer.render(scene, camera);
 }
 animate();
 
+// --- TOUCH & INTERACTION ---
+document.getElementById('sendBtn').onclick = () => {
+    // Mobile vibration for "Feel"
+    if (navigator.vibrate) navigator.vibrate(40);
+    
+    const input = document.getElementById('userInput');
+    if(input.value) {
+        window.speechSynthesis.cancel();
+        const speech = new SpeechSynthesisUtterance("Ji, main sun rahi hoon. Boliye.");
+        speech.lang = 'hi-IN';
+        window.speechSynthesis.speak(speech);
+        input.value = "";
+    }
+};
+
 window.addEventListener('pointermove', (e) => {
-    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.4;
+    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.5;
     mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.3;
 });
+
+window.onresize = () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+};
 </script>
 </body>
 </html>
