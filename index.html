@@ -1,9 +1,38 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rupam AI - Live</title>
+    <style>
+        :root { --glow: #ff4757; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        #ui-layer { position: fixed; bottom: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 1000; }
+        .input-box { display: flex; background: rgba(15, 15, 15, 0.95); border: 2.2px solid var(--glow); border-radius: 50px; width: 88%; max-width: 380px; box-shadow: 0 0 15px var(--glow); }
+        input { flex: 1; background: transparent; border: none; color: #fff; padding: 12px 18px; outline: none; font-size: 16px; }
+        button { background: var(--glow); border: none; width: 48px; height: 48px; border-radius: 50%; color: #fff; cursor: pointer; }
+        #loader { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; }
+    </style>
+</head>
+<body>
+
+<div id="loader">Taiyaar ho rahi hoon...</div>
+
+<div id="ui-layer">
+    <div class="input-box">
+        <input type="text" id="userInput" placeholder="Rupam se baat karein...">
+        <button id="sendBtn">❤️</button>
+    </div>
+</div>
+
+<script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } } </script>
+
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -11,65 +40,58 @@ document.body.appendChild(renderer.domElement);
 
 scene.add(new THREE.AmbientLight(0xffffff, 4));
 const light = new THREE.DirectionalLight(0xffffff, 2);
-light.position.set(1, 1, 5);
+light.position.set(2, 2, 5);
 scene.add(light);
 
 let model, head, mouse = { x: 0, y: 0 };
 
-new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
+const loader = new GLTFLoader();
+loader.load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
     model = gltf.scene;
 
-    // --- AUTO-SKILL POWER: SCALE & CENTER LOGIC ---
+    // --- SKILL POWER: AUTO FIT LOGIC ---
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
-
-    // Screen ke hisaab se height auto-calculate karna (Magic Scale)
-    const scale = 2.2 / size.y; 
+    const scale = 2.0 / size.y; // Height ke hisaab se scale adjust karna
     model.scale.set(scale, scale, scale);
-    
-    // Model ko bilkul center aur bottom par lana
-    model.position.y = -(size.y * scale) / 2 - 0.2;
-    model.position.x = -center.x * scale;
-    model.position.z = -center.z * scale;
+    model.position.y = -1.2; 
     
     scene.add(model);
     document.getElementById('loader').style.display = 'none';
 
-    // --- BONE SKILL: NATURAL POSE ---
+    // --- BONE SKILL: POSE & TRACKING ---
     model.traverse(o => {
         if (o.isBone) {
             const n = o.name.toLowerCase();
             if (n.includes("head")) head = o;
 
-            // Haathon ko naturally niche laana
+            // Haathon ko naturally niche laana (T-pose hatane ke liye)
             if (n.includes("arm") || n.includes("shoulder")) {
-                // Rotation ko reset karke natural angle dena
-                if (n.includes("left")) o.rotation.z = Math.PI / 2.3; 
-                if (n.includes("right")) o.rotation.z = -Math.PI / 2.3;
+                if (n.includes("left")) o.rotation.z = 1.4;
+                if (n.includes("right")) o.rotation.z = -1.4;
             }
         }
     });
+}, undefined, (err) => {
+    document.getElementById('loader').innerText = "Load nahi hua!";
 });
 
-camera.position.set(0, 0, 3);
+camera.position.set(0, 0, 3.5);
 
 function animate() {
     requestAnimationFrame(animate);
     if(model && head) {
-        // Smooth head tracking
         head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.1);
         head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.1);
-        
-        // Halki si body movement (Natural breathing)
-        model.position.y += Math.sin(Date.now() * 0.002) * 0.0002;
     }
     renderer.render(scene, camera);
 }
 animate();
 
 window.addEventListener('pointermove', (e) => {
-    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.5;
+    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.4;
     mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.3;
 });
 </script>
+</body>
+</html>
