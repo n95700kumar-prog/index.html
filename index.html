@@ -1,1 +1,36 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rupam AI</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; }
+        #ui { position: fixed; bottom: 20px; width: 100%; text-align: center; z-index: 10; }
+        input { padding: 10px; border-radius: 20px; border: 2px solid #ff4757; width: 70%; }
+    </style>
+</head>
+<body>
+    <div id="ui"><input type="text" placeholder="Rupam se baat karein..."></div>
+    <script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } } </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(35, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        scene.add(new THREE.AmbientLight(0xffffff, 4));
+        new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
+            const model = gltf.scene;
+            model.position.y = -2;
+            scene.add(model);
+        });
+        camera.position.z = 5;
+        function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
+        animate();
+    </script>
+</body>
+</html>
 
