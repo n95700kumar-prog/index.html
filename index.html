@@ -3,23 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam AI - Final Fix</title>
+    <title>Rupam AI - Normal Fix</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
         #ui-layer { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 100; }
-        .box { display: flex; background: rgba(20, 20, 20, 0.95); border: 2px solid #ff4757; border-radius: 50px; width: 88%; max-width: 380px; padding: 6px; box-shadow: 0 0 25px rgba(255, 71, 87, 0.4); }
+        .box { display: flex; background: rgba(20, 20, 20, 0.9); border: 2px solid #ff4757; border-radius: 50px; width: 88%; max-width: 380px; padding: 6px; box-shadow: 0 0 20px rgba(255, 71, 87, 0.3); }
         input { flex: 1; background: none; border: none; color: white; padding: 12px 18px; outline: none; font-size: 16px; }
         button { background: #ff4757; border: none; color: white; border-radius: 50%; width: 46px; height: 46px; cursor: pointer; }
-        #loader-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 80%; }
-        .reload-btn { margin-top: 15px; padding: 8px 15px; background: #333; border: 1px solid #ff4757; color: white; border-radius: 5px; cursor: pointer; }
+        #loader { position: fixed; top: 50%; width: 100%; text-align: center; }
     </style>
 </head>
 <body>
 
-<div id="loader-box">
-    <div id="status">Rupam load ho rahi hai... 0%</div>
-    <button class="reload-btn" onclick="location.reload()">Refresh Karein</button>
-</div>
+<div id="loader">Rupam taiyaar ho rahi hai...</div>
 
 <div id="ui-layer" style="display:none;">
     <div class="box">
@@ -41,7 +37,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0xffffff, 3.5));
+// Lighting - Natural & Bright
+scene.add(new THREE.AmbientLight(0xffffff, 4));
 const light = new THREE.DirectionalLight(0xffffff, 2);
 light.position.set(2, 2, 5);
 scene.add(light);
@@ -49,41 +46,38 @@ scene.add(light);
 let model, head, mouse = { x: 0, y: 0 };
 let clock = new THREE.Clock();
 
-// --- MODEL 6 LINK (RAW GITHUB LINK) ---
-const modelURL = 'https://raw.githubusercontent.com/n95700kumar-prog/index.html/main/model%20(6).glb';
+// --- CDN LINK (Stable for GitHub) ---
+const modelURL = 'https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(6).glb';
 
 const loader = new GLTFLoader();
 loader.load(modelURL, (gltf) => {
     model = gltf.scene;
 
+    // Normalizing Scale & Position
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
-    const scale = 2.2 / size.y; 
+    const scale = 2.1 / size.y; 
     model.scale.set(scale, scale, scale);
     model.position.y = -1.2; 
     
     scene.add(model);
-    document.getElementById('loader-box').style.display = 'none';
+    document.getElementById('loader').style.display = 'none';
     document.getElementById('ui-layer').style.display = 'flex';
 
     model.traverse(o => {
         if (o.isBone) {
             const n = o.name.toLowerCase();
             if (n.includes("head")) head = o;
-            if (n.includes("arm") || n.includes("shoulder")) {
-                if (n.includes("left")) o.rotation.z = 1.45;
-                if (n.includes("right")) o.rotation.z = -1.45;
+            
+            // Pose ko "Normal" (niche) karna
+            if (n.includes("arm") || n.includes("shoulder") || n.includes("uparm")) {
+                if (n.includes("left")) o.rotation.z = 1.4;
+                if (n.includes("right")) o.rotation.z = -1.4;
             }
         }
     });
-}, (xhr) => {
-    if (xhr.lengthComputable) {
-        const percent = Math.round((xhr.loaded / xhr.total) * 100);
-        document.getElementById('status').innerText = `Rupam load ho rahi hai... ${percent}%`;
-    }
-}, (err) => {
-    document.getElementById('status').innerText = "Load Nahi Hua! Network Check Karein.";
-    console.error(err);
+}, undefined, (err) => {
+    document.getElementById('loader').innerText = "Load Nahi Hua! Link Check Karein.";
 });
 
 camera.position.set(0, 0, 3.8);
@@ -92,11 +86,13 @@ function animate() {
     requestAnimationFrame(animate);
     const t = clock.getElapsedTime();
     if(model) {
-        // Natural Breathing Movement
-        model.position.y = -1.2 + Math.sin(t * 1.5) * 0.005; 
+        // Very Subtle Breathing (Normal Behavior)
+        model.position.y = -1.2 + Math.sin(t * 1.2) * 0.004; 
+        
         if(head) {
-            head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.08);
-            head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.08);
+            // Smooth Head Tracking
+            head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.07);
+            head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.07);
         }
     }
     renderer.render(scene, camera);
@@ -104,16 +100,16 @@ function animate() {
 animate();
 
 window.addEventListener('pointermove', (e) => {
-    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.45;
-    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.3;
+    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.4;
+    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.25;
 });
 
 document.getElementById('sendBtn').onclick = () => {
-    if (navigator.vibrate) navigator.vibrate(50);
+    if (navigator.vibrate) navigator.vibrate(40);
     const input = document.getElementById('userInput');
     if(input.value) {
         window.speechSynthesis.cancel();
-        const speech = new SpeechSynthesisUtterance("Ji, main sun rahi hoon.");
+        const speech = new SpeechSynthesisUtterance("Ji, ab sab normal hai.");
         speech.lang = 'hi-IN';
         window.speechSynthesis.speak(speech);
         input.value = "";
