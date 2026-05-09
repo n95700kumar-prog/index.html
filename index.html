@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam AI - Perfect Pose</title>
+    <title>Rupam AI - Fixed</title>
     <style>
         :root { --glow: #ff4757; }
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
@@ -28,64 +28,66 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+// 1. SCENE SETUP
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0); // Black screen fix
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0xffffff, 4));
-const light = new THREE.DirectionalLight(0xffffff, 2);
-light.position.set(2, 2, 5);
-scene.add(light);
+// LIGHTING
+const ambLight = new THREE.AmbientLight(0xffffff, 3);
+scene.add(ambLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+dirLight.position.set(2, 2, 5);
+scene.add(dirLight);
 
 let model, head, mouse = { x: 0, y: 0 };
 
-new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
+// 2. MODEL LOADING
+const loader = new GLTFLoader();
+loader.load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
     model = gltf.scene;
     
-    // 1. SCALE: Ise 0.010 rakha hai taaki poori body sahi dikhe
-    model.scale.set(0.010, 0.010, 0.010); 
-    
-    // 2. POSITION: Center mein set kiya
-    model.position.set(0, -1.4, 0); 
-    
+    // Size & Position Adjustments
+    model.scale.set(0.6, 0.6, 0.6); 
+    model.position.set(0, -1, 0); 
     scene.add(model);
     
+    // 3. POSE FIXING (Bones Logic)
     model.traverse(o => {
         if (o.isBone) {
-            const n = o.name; // Model ke asli names use kar rahe hain
+            const n = o.name.toLowerCase();
+            if (n.includes("head")) head = o;
             
-            // Head tracking
-            if (n.includes("Head") || n.includes("Neck")) head = o;
-            
-            // 3. HATH (ARM) ROTATION: 
-            // Aapke model mein 'Arm' aur 'Shoulder' bones ko target kar rahe hain
-            if (n.includes("Arm") || n.includes("Shoulder") || n.includes("Hand")) {
-                if (n.includes("Left")) {
-                    o.rotation.z = 1.4; // Niche jhukaya
-                }
-                if (n.includes("Right")) {
-                    o.rotation.z = -1.4; // Niche jhukaya
-                }
+            // Haathon ko niche jhukana
+            if (n.includes("arm") || n.includes("shoulder")) {
+                if (n.includes("left")) o.rotation.z = 1.3;
+                if (n.includes("right")) o.rotation.z = -1.3;
             }
         }
     });
-});
+}, 
+// Loading progress check
+(xhr) => { console.log((xhr.loaded / xhr.total * 100) + '% loaded'); },
+// Error check
+(error) => { console.error('Model load nahi hua:', error); });
 
-camera.position.set(0, 0, 3.5);
+camera.position.set(0, 0.5, 3.5);
 
-function speak(text) {
+// 4. SPEECH & INTERACTION
+function speak(t) {
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'hi-IN';
-    window.speechSynthesis.speak(utterance);
+    const ut = new SpeechSynthesisUtterance(t);
+    ut.lang = 'hi-IN';
+    window.speechSynthesis.speak(ut);
 }
 
 document.getElementById('sendBtn').onclick = () => {
     const input = document.getElementById('userInput');
     if(input.value) {
-        speak("Maine apne haath niche kar liye hain. Kya ab main theek dikh rahi hoon?");
+        speak("Ji, main ab bilkul theek dikh rahi hoon aur mere haath bhi sahi hain!");
         input.value = "";
     }
 };
@@ -104,6 +106,12 @@ function animate() {
     renderer.render(scene, camera);
 }
 animate();
+
+window.onresize = () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+};
 </script>
 </body>
 </html>
