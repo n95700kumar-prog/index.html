@@ -2,112 +2,149 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam N1</title>
+    <title>Realistic AI Girl - Interactive</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
-        #ui-layer { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 100; }
-        .box { display: flex; background: rgba(20, 20, 20, 0.9); border: 2px solid #ff4757; border-radius: 50px; width: 88%; max-width: 380px; padding: 6px; box-shadow: 0 0 20px rgba(255, 71, 87, 0.3); }
-        input { flex: 1; background: none; border: none; color: white; padding: 12px 18px; outline: none; font-size: 16px; }
-        button { background: #ff4757; border: none; color: white; border-radius: 50%; width: 46px; height: 46px; cursor: pointer; }
-        #loader { position: fixed; top: 50%; width: 100%; text-align: center; }
+        body { margin: 0; background: #000; overflow: hidden; }
+        #overlay {
+            position: absolute; top: 20px; width: 100%;
+            text-align: center; color: #0ff; font-family: 'Segoe UI', sans-serif;
+            pointer-events: none; text-transform: uppercase; letter-spacing: 2px;
+        }
     </style>
 </head>
 <body>
 
-<div id="loader">Rupam N1 taiyaar ho rahi hai...</div>
-
-<div id="ui-layer" style="display:none;">
-    <div class="box">
-        <input type="text" id="userInput" placeholder="Rupam se baat karein...">
-        <button id="sendBtn">❤️</button>
+    <div id="overlay">
+        <div id="emotion-status">Mood: Normal</div>
+        <small id="part-detect">Interaction: Ready</small>
     </div>
-</div>
 
-<script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } } </script>
-
-<script type="module">
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
-document.body.appendChild(renderer.domElement);
-
-// Environment Lighting
-scene.add(new THREE.AmbientLight(0xffffff, 4));
-const light = new THREE.DirectionalLight(0xffffff, 2);
-light.position.set(2, 2, 5);
-scene.add(light);
-
-let model, head, mouse = { x: 0, y: 0 };
-
-// --- N1 DATA SAVED LINK ---
-const modelURL = 'https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(6).glb';
-
-const loader = new GLTFLoader();
-loader.load(modelURL, (gltf) => {
-    model = gltf.scene;
-
-    // SIRF SIZE AUR POSITION (No Artificial Pose Changes)
-    const box = new THREE.Box3().setFromObject(model);
-    const size = box.getSize(new THREE.Vector3());
-    const scale = 2.1 / size.y; 
-    model.scale.set(scale, scale, scale);
-    model.position.y = -1.2; 
-    
-    scene.add(model);
-    document.getElementById('loader').style.display = 'none';
-    document.getElementById('ui-layer').style.display = 'flex';
-
-    // Bone Detection for Head Only
-    model.traverse(o => {
-        if (o.isBone && o.name.toLowerCase().includes("head")) {
-            head = o;
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
         }
-    });
-}, undefined, (err) => {
-    document.getElementById('loader').innerText = "Rupam N1 Error: Link check karein.";
-});
+    </script>
 
-camera.position.set(0, 0, 3.8);
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-function animate() {
-    requestAnimationFrame(animate);
-    if(model && head) {
-        // Natural Head Tracking (Only reaction to you)
-        head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.07);
-        head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.07);
-    }
-    renderer.render(scene, camera);
-}
-animate();
+        let scene, camera, renderer, model, mixer, clock;
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let head, neck, spine; 
 
-window.addEventListener('pointermove', (e) => {
-    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.4;
-    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.25;
-});
+        const MODEL_URL = 'https://github.com/n95700kumar-prog/index.html/raw/refs/heads/main/model%20(6).glb';
 
-document.getElementById('sendBtn').onclick = () => {
-    if (navigator.vibrate) navigator.vibrate(40);
-    const input = document.getElementById('userInput');
-    if(input.value) {
-        window.speechSynthesis.cancel();
-        const speech = new SpeechSynthesisUtterance("Ji, Rupam N1 active hai.");
-        speech.lang = 'hi-IN';
-        window.speechSynthesis.speak(speech);
-        input.value = "";
-    }
-};
+        init();
 
-window.onresize = () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-};
-</script>
+        function init() {
+            scene = new THREE.Scene();
+            clock = new THREE.Clock();
+
+            // Environment & Lighting (For Realism)
+            const light = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(light);
+            const spot = new THREE.SpotLight(0xffffff, 1.5);
+            spot.position.set(5, 10, 5);
+            scene.add(spot);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 1.5, 3);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            document.body.appendChild(renderer.domElement);
+
+            const controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.target.set(0, 1, 0);
+
+            // Load Model
+            const loader = new GLTFLoader();
+            loader.load(MODEL_URL, (gltf) => {
+                model = gltf.scene;
+                scene.add(model);
+
+                // Bones mapping for realistic movement
+                model.traverse(n => {
+                    if(n.isBone) {
+                        if(n.name.includes('Head')) head = n;
+                        if(n.name.includes('Neck')) neck = n;
+                        if(n.name.includes('Spine')) spine = n;
+                    }
+                });
+
+                mixer = new THREE.AnimationMixer(model);
+                if(gltf.animations[0]) mixer.clipAction(gltf.animations[0]).play();
+            });
+
+            window.addEventListener('click', onTouch);
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            animate();
+        }
+
+        // Realistic Behavior & Emotion Logic
+        function onTouch(event) {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(model.children, true);
+
+            if (intersects.length > 0) {
+                const part = intersects[0].object.name.toLowerCase();
+                const status = document.getElementById('emotion-status');
+                const detect = document.getElementById('part-detect');
+
+                detect.innerText = "Touched: " + part;
+
+                // Behavior Trigger
+                if(part.includes('head') || part.includes('face')) {
+                    status.innerText = "Mood: Shy / Blushing";
+                    triggerReaction(0.2, 0.1); // Head tilt reaction
+                } else if(part.includes('arm') || part.includes('hand')) {
+                    status.innerText = "Mood: Surprised";
+                    triggerReaction(0, 0.5);
+                } else if(part.includes('leg')) {
+                    status.innerText = "Mood: Ticklish";
+                }
+            }
+        }
+
+        function triggerReaction(x, y) {
+            if(head) {
+                head.rotation.x += x;
+                head.rotation.y += y;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            if (mixer) mixer.update(delta);
+
+            // 1. Natural Breathing Movement (Behavior)
+            if(spine) {
+                spine.rotation.x = Math.sin(time * 1.5) * 0.02; 
+            }
+
+            // 2. Realistic Eye/Head Tracking
+            if(head) {
+                head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x * 0.5, 0.05);
+                head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y * 0.3, 0.05);
+            }
+
+            renderer.render(scene, camera);
+        }
+    </script>
 </body>
 </html>
