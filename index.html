@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam AI - Normal Fix</title>
+    <title>Rupam N1</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
         #ui-layer { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 100; }
@@ -15,7 +15,7 @@
 </head>
 <body>
 
-<div id="loader">Rupam taiyaar ho rahi hai...</div>
+<div id="loader">Rupam N1 taiyaar ho rahi hai...</div>
 
 <div id="ui-layer" style="display:none;">
     <div class="box">
@@ -37,23 +37,22 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
-// Lighting - Natural & Bright
+// Environment Lighting
 scene.add(new THREE.AmbientLight(0xffffff, 4));
 const light = new THREE.DirectionalLight(0xffffff, 2);
 light.position.set(2, 2, 5);
 scene.add(light);
 
 let model, head, mouse = { x: 0, y: 0 };
-let clock = new THREE.Clock();
 
-// --- CDN LINK (Stable for GitHub) ---
+// --- N1 DATA SAVED LINK ---
 const modelURL = 'https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(6).glb';
 
 const loader = new GLTFLoader();
 loader.load(modelURL, (gltf) => {
     model = gltf.scene;
 
-    // Normalizing Scale & Position
+    // SIRF SIZE AUR POSITION (No Artificial Pose Changes)
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
     const scale = 2.1 / size.y; 
@@ -64,36 +63,24 @@ loader.load(modelURL, (gltf) => {
     document.getElementById('loader').style.display = 'none';
     document.getElementById('ui-layer').style.display = 'flex';
 
+    // Bone Detection for Head Only
     model.traverse(o => {
-        if (o.isBone) {
-            const n = o.name.toLowerCase();
-            if (n.includes("head")) head = o;
-            
-            // Pose ko "Normal" (niche) karna
-            if (n.includes("arm") || n.includes("shoulder") || n.includes("uparm")) {
-                if (n.includes("left")) o.rotation.z = 1.4;
-                if (n.includes("right")) o.rotation.z = -1.4;
-            }
+        if (o.isBone && o.name.toLowerCase().includes("head")) {
+            head = o;
         }
     });
 }, undefined, (err) => {
-    document.getElementById('loader').innerText = "Load Nahi Hua! Link Check Karein.";
+    document.getElementById('loader').innerText = "Rupam N1 Error: Link check karein.";
 });
 
 camera.position.set(0, 0, 3.8);
 
 function animate() {
     requestAnimationFrame(animate);
-    const t = clock.getElapsedTime();
-    if(model) {
-        // Very Subtle Breathing (Normal Behavior)
-        model.position.y = -1.2 + Math.sin(t * 1.2) * 0.004; 
-        
-        if(head) {
-            // Smooth Head Tracking
-            head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.07);
-            head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.07);
-        }
+    if(model && head) {
+        // Natural Head Tracking (Only reaction to you)
+        head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.07);
+        head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.07);
     }
     renderer.render(scene, camera);
 }
@@ -109,7 +96,7 @@ document.getElementById('sendBtn').onclick = () => {
     const input = document.getElementById('userInput');
     if(input.value) {
         window.speechSynthesis.cancel();
-        const speech = new SpeechSynthesisUtterance("Ji, ab sab normal hai.");
+        const speech = new SpeechSynthesisUtterance("Ji, Rupam N1 active hai.");
         speech.lang = 'hi-IN';
         window.speechSynthesis.speak(speech);
         input.value = "";
