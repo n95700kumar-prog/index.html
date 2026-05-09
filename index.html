@@ -1,132 +1,27 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam AI - Smart & Fit</title>
-    <style>
-        :root { --glow: #ff4757; }
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #ui-layer { position: fixed; bottom: 30px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 1000; }
-        .input-box { display: flex; background: rgba(17, 17, 17, 0.9); border: 2px solid var(--glow); border-radius: 50px; width: 85%; max-width: 400px; box-shadow: 0 0 20px rgba(255, 71, 87, 0.4); overflow: hidden; }
-        input { flex: 1; background: transparent; border: none; color: #fff; padding: 15px 20px; outline: none; font-size: 16px; }
-        button { background: var(--glow); border: none; width: 55px; height: 55px; color: #fff; cursor: pointer; font-size: 22px; transition: 0.3s; }
-        button:active { transform: scale(0.9); }
-        #status { color: #fff; margin-bottom: 10px; font-size: 14px; text-shadow: 0 0 8px var(--glow); letter-spacing: 1px; }
-    </style>
-</head>
-<body>
-
-<div id="ui-layer">
-    <div id="status">Rupam aapki baatein sun rahi hai...</div>
-    <div class="input-box">
-        <input type="text" id="userInput" placeholder="Kuch puchiye...">
-        <button id="sendBtn">❤️</button>
-    </div>
-</div>
-
-<script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } } </script>
-
-<script type="module">
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
-document.body.appendChild(renderer.domElement);
-
-scene.add(new THREE.AmbientLight(0xffffff, 4));
-const pointLight = new THREE.PointLight(0xffffff, 2);
-pointLight.position.set(2, 2, 5);
-scene.add(pointLight);
-
-let model, head, mouse = { x: 0, y: 0 };
-
-// 1. MODEL LOAD + SIZE + MANUAL POSE
+// 1. MODEL LOAD + UNIVERSAL POSE FIX
 new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
     model = gltf.scene;
     
-    // Zoom badha diya aur niche set kiya
-    model.scale.set(4.2, 4.2, 4.2); 
-    model.position.y = -3.8; 
+    // Position fix: Ise thoda aur niche aur zoom sahi karte hain
+    model.scale.set(4.0, 4.0, 4.0); 
+    model.position.y = -4.5; // Thoda aur niche taaki face center mein aaye
     scene.add(model);
     
     model.traverse(o => {
-        if (o.isBone && o.name.toLowerCase().includes("head")) head = o;
+        if (o.isBone) {
+            const name = o.name.toLowerCase();
+            // Head tracking
+            if (name.includes("head")) head = o;
 
-        // T-POSE FIX: Haathon ko niche jhukana
-        if (o.isBone && (o.name.toLowerCase().includes("arm") || o.name.toLowerCase().includes("shoulder"))) {
-            if (o.name.toLowerCase().includes("left")) o.rotation.z = 1.3;
-            if (o.name.toLowerCase().includes("right")) o.rotation.z = -1.3;
+            // Pose Fix: Sabhi Arm aur Shoulder bones ko niche jhukana
+            if (name.includes("arm") || name.includes("shoulder") || name.includes("hand")) {
+                if (name.includes("left")) {
+                    o.rotation.set(0, 0, 1.4); // Left side niche
+                }
+                if (name.includes("right")) {
+                    o.rotation.set(0, 0, -1.4); // Right side niche
+                }
+            }
         }
     });
-}, undefined, (e) => console.error(e));
-
-camera.position.z = 6;
-
-// 2. VOICE SYSTEM
-function speak(text) {
-    window.speechSynthesis.cancel(); // Purani awaaz roko
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'hi-IN';
-    utterance.pitch = 1.2;
-    utterance.rate = 1.0;
-    utterance.onstart = () => document.getElementById('status').innerText = "Rupam bol rahi hai...";
-    utterance.onend = () => document.getElementById('status').innerText = "Main sun rahi hoon...";
-    window.speechSynthesis.speak(utterance);
-}
-
-// 3. SMART BRAIN (Logic)
-async function getAIResponse(text) {
-    const input = text.toLowerCase();
-    if(input.includes("kaise ho")) return "Main bohot khush hoon ki aapne pucha! Aap kaise hain?";
-    if(input.includes("naam")) return "Mera naam Rupam hai, main aapki personal AI assistant hoon.";
-    if(input.includes("kya kar rahi")) return "Main aapki baaton ka intezar kar rahi hoon.";
-    if(input.includes("khana")) return "Main toh bijli aur data khati hoon, par mujhe pata hai aapko swadisht khana pasand hai!";
-    
-    return "Ye sunkar achha laga! Mere paas abhi itna hi dimaag hai, par Naman mujhe aur smart bana raha hai.";
-}
-
-document.getElementById('sendBtn').onclick = async () => {
-    const input = document.getElementById('userInput');
-    const text = input.value.trim();
-    if(text) {
-        document.getElementById('status').innerText = "Rupam soch rahi hai...";
-        const response = await getAIResponse(text);
-        speak(response);
-        input.value = "";
-    }
-};
-
-// 4. TRACKING & ANIMATION
-window.addEventListener('pointermove', (e) => {
-    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.4;
-    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.3;
 });
-
-function animate() {
-    requestAnimationFrame(animate);
-    if(model) {
-        // Halka sa upar niche hilaana (Natural feeling)
-        model.position.y = -3.8 + Math.sin(Date.now() * 0.001) * 0.02;
-        if (head) {
-            head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.1);
-            head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.1);
-        }
-    }
-    renderer.render(scene, camera);
-}
-animate();
-
-// Mobile resize support
-window.onresize = () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-};
-</script>
-</body>
-</html>
