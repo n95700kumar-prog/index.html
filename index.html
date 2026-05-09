@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam AI - Final Pose Fix</title>
+    <title>Rupam AI - Perfect Pose</title>
     <style>
         :root { --glow: #ff4757; }
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
         #ui-layer { position: fixed; bottom: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 1000; }
         .input-box { display: flex; background: rgba(15, 15, 15, 0.95); border: 2.2px solid var(--glow); border-radius: 50px; width: 88%; max-width: 380px; box-shadow: 0 0 15px var(--glow); }
         input { flex: 1; background: transparent; border: none; color: #fff; padding: 12px 18px; outline: none; font-size: 16px; }
-        button { background: var(--glow); border: none; width: 48px; height: 48px; border-radius: 50%; color: #fff; cursor: pointer; font-size: 20px; }
+        button { background: var(--glow); border: none; width: 48px; height: 48px; border-radius: 50%; color: #fff; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -35,7 +35,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 scene.add(new THREE.AmbientLight(0xffffff, 4));
-const light = new THREE.PointLight(0xffffff, 2);
+const light = new THREE.DirectionalLight(0xffffff, 2);
 light.position.set(2, 2, 5);
 scene.add(light);
 
@@ -44,38 +44,36 @@ let model, head, mouse = { x: 0, y: 0 };
 new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
     model = gltf.scene;
     
-    // 1. SCALE: Ise aur kam (0.01) kiya taaki arms screen ke andar rahein
-    model.scale.set(0.01, 0.01, 0.01); 
+    // 1. SCALE: Ise 0.010 rakha hai taaki poori body sahi dikhe
+    model.scale.set(0.010, 0.010, 0.010); 
     
-    // 2. POSITION: Center aur thoda niche
-    model.position.set(0, -1.3, 0); 
+    // 2. POSITION: Center mein set kiya
+    model.position.set(0, -1.4, 0); 
     
     scene.add(model);
     
     model.traverse(o => {
         if (o.isBone) {
-            const n = o.name.toLowerCase();
+            const n = o.name; // Model ke asli names use kar rahe hain
             
             // Head tracking
-            if (n.includes("head") || n.includes("neck")) head = o;
+            if (n.includes("Head") || n.includes("Neck")) head = o;
             
-            // 3. PERFECT ARM FIX: 
-            // Hum Shoulder, Arm aur Forearm sabko rotate kar rahe hain taaki T-pose khatam ho jaye
-            if (n.includes("arm") || n.includes("shoulder") || n.includes("clavicle") || n.includes("forearm")) {
-                if (n.includes("left")) {
-                    o.rotation.z = 1.4; // Haath niche jhukana
-                    o.rotation.y = 0.2; // Thoda aage
+            // 3. HATH (ARM) ROTATION: 
+            // Aapke model mein 'Arm' aur 'Shoulder' bones ko target kar rahe hain
+            if (n.includes("Arm") || n.includes("Shoulder") || n.includes("Hand")) {
+                if (n.includes("Left")) {
+                    o.rotation.z = 1.4; // Niche jhukaya
                 }
-                if (n.includes("right")) {
-                    o.rotation.z = -1.4; // Haath niche jhukana
-                    o.rotation.y = -0.2; // Thoda aage
+                if (n.includes("Right")) {
+                    o.rotation.z = -1.4; // Niche jhukaya
                 }
             }
         }
     });
 });
 
-camera.position.set(0, 0, 3);
+camera.position.set(0, 0, 3.5);
 
 function speak(text) {
     window.speechSynthesis.cancel();
@@ -87,7 +85,7 @@ function speak(text) {
 document.getElementById('sendBtn').onclick = () => {
     const input = document.getElementById('userInput');
     if(input.value) {
-        speak("Maine haath sahi kar liye hain! Kya ab main natural lag rahi hoon?");
+        speak("Maine apne haath niche kar liye hain. Kya ab main theek dikh rahi hoon?");
         input.value = "";
     }
 };
