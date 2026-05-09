@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rupam AI - Fixed</title>
+    <title>Rupam AI - Final Fixed</title>
     <style>
         :root { --glow: #ff4757; }
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
@@ -11,9 +11,12 @@
         .input-box { display: flex; background: rgba(15, 15, 15, 0.95); border: 2.2px solid var(--glow); border-radius: 50px; width: 88%; max-width: 380px; box-shadow: 0 0 15px var(--glow); }
         input { flex: 1; background: transparent; border: none; color: #fff; padding: 12px 18px; outline: none; font-size: 16px; }
         button { background: var(--glow); border: none; width: 48px; height: 48px; border-radius: 50%; color: #fff; cursor: pointer; }
+        #loader { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 14px; text-align: center; }
     </style>
 </head>
 <body>
+
+<div id="loader">Rupam taiyaar ho rahi hai...</div>
 
 <div id="ui-layer">
     <div class="input-box">
@@ -28,66 +31,77 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// 1. SCENE SETUP
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x000000, 0); // Black screen fix
+renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
-// LIGHTING
-const ambLight = new THREE.AmbientLight(0xffffff, 3);
-scene.add(ambLight);
-const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-dirLight.position.set(2, 2, 5);
-scene.add(dirLight);
+// Lighting
+scene.add(new THREE.AmbientLight(0xffffff, 3.5));
+const light = new THREE.DirectionalLight(0xffffff, 2.5);
+light.position.set(2, 2, 5);
+scene.add(light);
 
 let model, head, mouse = { x: 0, y: 0 };
 
-// 2. MODEL LOADING
-const loader = new GLTFLoader();
-loader.load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
+// Loading Manager
+const manager = new THREE.LoadingManager();
+manager.onLoad = () => { document.getElementById('loader').style.display = 'none'; };
+
+const loader = new GLTFLoader(manager);
+// YAHAN APNA MODEL LINK CHECK KAREIN
+const modelURL = 'https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb';
+
+loader.load(modelURL, (gltf) => {
     model = gltf.scene;
     
-    // Size & Position Adjustments
-    model.scale.set(0.6, 0.6, 0.6); 
-    model.position.set(0, -1, 0); 
+    // SCALE FIX: Model ko chota kiya taaki fit aaye
+    model.scale.set(0.65, 0.65, 0.65); 
+    model.position.set(0, -1.2, 0); 
     scene.add(model);
     
-    // 3. POSE FIXING (Bones Logic)
+    // BONES FIX (Haath aur Chehra)
     model.traverse(o => {
         if (o.isBone) {
-            const n = o.name.toLowerCase();
-            if (n.includes("head")) head = o;
+            const name = o.name.toLowerCase();
             
-            // Haathon ko niche jhukana
-            if (n.includes("arm") || n.includes("shoulder")) {
-                if (n.includes("left")) o.rotation.z = 1.3;
-                if (n.includes("right")) o.rotation.z = -1.3;
+            // Face tracking
+            if (name.includes("head")) head = o;
+            
+            // NATURAL ARMS FIX: T-pose hatane ke liye
+            if (name.includes("arm") || name.includes("shoulder")) {
+                if (name.includes("left")) {
+                    o.rotation.z = 1.35; // Niche jhukaya
+                    o.rotation.x = 0.2;  // Thoda natural aage
+                }
+                if (name.includes("right")) {
+                    o.rotation.z = -1.35; // Niche jhukaya
+                    o.rotation.x = 0.2;  // Thoda natural aage
+                }
             }
         }
     });
-}, 
-// Loading progress check
-(xhr) => { console.log((xhr.loaded / xhr.total * 100) + '% loaded'); },
-// Error check
-(error) => { console.error('Model load nahi hua:', error); });
+}, undefined, (e) => {
+    document.getElementById('loader').innerText = "Model load nahi hua. Refresh karein.";
+    console.error(e);
+});
 
 camera.position.set(0, 0.5, 3.5);
 
-// 4. SPEECH & INTERACTION
-function speak(t) {
+// Speak Logic
+function speak(text) {
     window.speechSynthesis.cancel();
-    const ut = new SpeechSynthesisUtterance(t);
-    ut.lang = 'hi-IN';
-    window.speechSynthesis.speak(ut);
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'hi-IN';
+    window.speechSynthesis.speak(utterance);
 }
 
 document.getElementById('sendBtn').onclick = () => {
     const input = document.getElementById('userInput');
     if(input.value) {
-        speak("Ji, main ab bilkul theek dikh rahi hoon aur mere haath bhi sahi hain!");
+        speak("Ji, ab sab sahi hai!");
         input.value = "";
     }
 };
