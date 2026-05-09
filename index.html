@@ -1,27 +1,102 @@
-// 1. MODEL LOAD + UNIVERSAL POSE FIX
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rupam AI - Fixed</title>
+    <style>
+        :root { --glow: #ff4757; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        #ui-layer { position: fixed; bottom: 30px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 1000; }
+        .input-box { display: flex; background: rgba(17, 17, 17, 0.9); border: 2px solid var(--glow); border-radius: 50px; width: 85%; max-width: 400px; box-shadow: 0 0 20px rgba(255, 71, 87, 0.4); }
+        input { flex: 1; background: transparent; border: none; color: #fff; padding: 15px 20px; outline: none; font-size: 16px; }
+        button { background: var(--glow); border: none; width: 55px; height: 55px; border-radius: 50%; color: #fff; cursor: pointer; font-size: 22px; }
+        #status { color: #fff; margin-bottom: 10px; font-size: 14px; text-shadow: 0 0 8px var(--glow); }
+    </style>
+</head>
+<body>
+
+<div id="ui-layer">
+    <div id="status">Main sun rahi hoon...</div>
+    <div class="input-box">
+        <input type="text" id="userInput" placeholder="Kuch puchiye...">
+        <button id="sendBtn">❤️</button>
+    </div>
+</div>
+
+<script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } } </script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff, 4));
+const light = new THREE.DirectionalLight(0xffffff, 2);
+light.position.set(2, 2, 5);
+scene.add(light);
+
+let model, head, mouse = { x: 0, y: 0 };
+
 new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
     model = gltf.scene;
-    
-    // Position fix: Ise thoda aur niche aur zoom sahi karte hain
-    model.scale.set(4.0, 4.0, 4.0); 
-    model.position.y = -4.5; // Thoda aur niche taaki face center mein aaye
+    model.scale.set(4.2, 4.2, 4.2); 
+    model.position.y = -4.2; 
     scene.add(model);
     
     model.traverse(o => {
         if (o.isBone) {
             const name = o.name.toLowerCase();
-            // Head tracking
             if (name.includes("head")) head = o;
-
-            // Pose Fix: Sabhi Arm aur Shoulder bones ko niche jhukana
-            if (name.includes("arm") || name.includes("shoulder") || name.includes("hand")) {
-                if (name.includes("left")) {
-                    o.rotation.set(0, 0, 1.4); // Left side niche
-                }
-                if (name.includes("right")) {
-                    o.rotation.set(0, 0, -1.4); // Right side niche
-                }
+            if (name.includes("arm") || name.includes("shoulder")) {
+                if (name.includes("left")) o.rotation.z = 1.3;
+                if (name.includes("right")) o.rotation.z = -1.3;
             }
         }
     });
 });
+
+camera.position.z = 6;
+
+function speak(text) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'hi-IN';
+    window.speechSynthesis.speak(utterance);
+}
+
+document.getElementById('sendBtn').onclick = () => {
+    const input = document.getElementById('userInput');
+    const text = input.value.trim().toLowerCase();
+    if(text) {
+        let reply = "Main aapki madad kaise kar sakti hoon?";
+        if(text.includes("kaise ho")) reply = "Main bohot achhi hoon, shukriya!";
+        if(text.includes("naam")) reply = "Mera naam Rupam hai.";
+        
+        speak(reply);
+        input.value = "";
+    }
+};
+
+window.addEventListener('pointermove', (e) => {
+    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.4;
+    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.3;
+});
+
+function animate() {
+    requestAnimationFrame(animate);
+    if(model && head) {
+        head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.1);
+        head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.1);
+    }
+    renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
