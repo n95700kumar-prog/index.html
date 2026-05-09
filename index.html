@@ -1,38 +1,109 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rupam AI - Final Perfect Version</title>
+    <style>
+        :root { --glow: #ff4757; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        #ui-layer { position: fixed; bottom: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 1000; }
+        .input-box { display: flex; background: rgba(15, 15, 15, 0.95); border: 2.2px solid var(--glow); border-radius: 50px; width: 88%; max-width: 380px; box-shadow: 0 0 15px rgba(255, 71, 87, 0.4); }
+        input { flex: 1; background: transparent; border: none; color: #fff; padding: 12px 18px; outline: none; font-size: 16px; }
+        button { background: var(--glow); border: none; width: 48px; height: 48px; border-radius: 50%; color: #fff; cursor: pointer; font-size: 20px; }
+        #status { color: #fff; margin-bottom: 8px; font-size: 12px; text-shadow: 0 0 5px var(--glow); }
+    </style>
+</head>
+<body>
+
+<div id="ui-layer">
+    <div id="status">Rupam taiyaar hai...</div>
+    <div class="input-box">
+        <input type="text" id="userInput" placeholder="Kaise ho Rupam?">
+        <button id="sendBtn">❤️</button>
+    </div>
+</div>
+
+<script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } } </script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const scene = new THREE.Scene();
+// Camera ko thoda door kiya (FOV 45) taaki poora model dikhe
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff, 4));
+const light = new THREE.DirectionalLight(0xffffff, 2.5);
+light.position.set(2, 2, 5);
+scene.add(light);
+
+let model, head, mouse = { x: 0, y: 0 };
+
 new GLTFLoader().load('https://cdn.jsdelivr.net/gh/n95700kumar-prog/index.html@main/model%20(5).glb', (gltf) => {
     model = gltf.scene;
-
-    // 1. PERFECT SIZE: Ise 3.2 rakha hai taaki chehra aur body balance lage
-    model.scale.set(3.2, 3.2, 3.2); 
     
-    // 2. PERFECT POSITION: Model ko bilkul bottom se touch karwaya hai
-    model.position.y = -3.2; 
-    model.position.x = 0;
-    model.position.z = 0;
+    // 1. SCALE FIX: Ise 0.5 rakha hai taaki wo screen mein choti aur fit dikhe
+    model.scale.set(0.5, 0.5, 0.5); 
     
+    // 2. POSITION FIX: Ise niche kiya taaki head screen ke beech mein aaye
+    model.position.y = -0.8; 
     scene.add(model);
     
-    // 3. T-POSE & TRACKING FIX
     model.traverse(o => {
         if (o.isBone) {
             const n = o.name.toLowerCase();
+            if (n.includes("head")) head = o;
             
-            // Head/Neck tracking
-            if (n.includes("head") || n.includes("neck")) head = o;
-
-            // T-POSE FIX: In bones ko dhoond kar haath niche jhukana
-            // Aapke model ke bones ke liye hum zyada categories check kar rahe hain
-            if (n.includes("arm") || n.includes("shoulder") || n.includes("hand") || n.includes("clavicle")) {
-                if (n.includes("left")) {
-                    o.rotation.z = 1.35; // Left haath niche
-                }
-                if (n.includes("right")) {
-                    o.rotation.z = -1.35; // Right haath niche
-                }
+            // 3. T-POSE FIX: Arms ko niche jhukana
+            if (n.includes("arm") || n.includes("shoulder")) {
+                if (n.includes("left")) o.rotation.z = 1.3;
+                if (n.includes("right")) o.rotation.z = -1.3;
             }
         }
     });
-    
-    document.getElementById('status').innerText = "Rupam live hai!";
-}, undefined, (error) => {
-    console.error("Model load nahi hua:", error);
 });
+
+// Camera position (z=3 se model thoda aur door dikhega)
+camera.position.set(0, 0, 3.5);
+
+function speak(text) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'hi-IN';
+    window.speechSynthesis.speak(utterance);
+}
+
+document.getElementById('sendBtn').onclick = () => {
+    const input = document.getElementById('userInput');
+    const text = input.value.trim().toLowerCase();
+    if(text) {
+        let reply = "Main sun rahi hoon!";
+        if(text.includes("kaise ho")) reply = "Main bilkul thik hoon!";
+        speak(reply);
+        input.value = "";
+    }
+};
+
+window.addEventListener('pointermove', (e) => {
+    mouse.x = (e.clientX / window.innerWidth - 0.5) * 0.4;
+    mouse.y = (e.clientY / window.innerHeight - 0.5) * 0.3;
+});
+
+function animate() {
+    requestAnimationFrame(animate);
+    if(model && head) {
+        head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mouse.x, 0.1);
+        head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mouse.y, 0.1);
+    }
+    renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
